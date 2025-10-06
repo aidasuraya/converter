@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pink & Black Currency Converter</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --panel: #111;
+      --text: #ffe4f7;
+      --muted: #f9a8d4;
+      --accent: #ec4899;   /* pink-500 */
+      --accent-dark: #be185d;
+      --input-bg: #1a1a1a;
+      --border: rgba(255, 192, 203, 0.15);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(1000px 400px at 20% -20%, rgba(236,72,153,.15), transparent), var(--bg);
+      color: var(--text);
+      padding: 24px;
+    }
+
+    .wrap {
+      width: min(560px, 94vw);
+      background: linear-gradient(180deg, #121212, #090909);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: 0 24px 64px rgba(236,72,153,.25);
+      overflow: hidden;
+    }
+
+    header {
+      padding: 14px 18px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .15em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel { display: grid; gap: 16px; padding: 20px; }
+
+    label {
+      font-size: 13px;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    input[type="number"], select {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 10px;
+      background: var(--input-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      outline: none;
+      transition: border-color .2s ease, box-shadow .2s ease;
+    }
+
+    input[type="number"]:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 6px rgba(236,72,153,.5);
+    }
+
+    .row {
+      display: grid;
+      gap: 14px;
+    }
+
+    @media (min-width: 500px) {
+      .row.two { grid-template-columns: 1fr 1fr; align-items: end; }
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: none;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #fff;
+      background: var(--accent);
+      transition: transform .1s ease, background .2s ease;
+      box-shadow: 0 6px 20px rgba(236,72,153,.35);
+    }
+
+    .btn:hover { background: var(--accent-dark); }
+    .btn:active { transform: translateY(1px); }
+
+    .swap {
+      width: 44px; height: 44px;
+      display: grid; place-items: center;
+      border-radius: 10px;
+      border: 1px dashed var(--border);
+      background: var(--input-bg);
+      color: var(--muted);
+      cursor: pointer;
+      transition: transform .1s ease;
+    }
+    .swap:active { transform: rotate(180deg); }
+
+    .result {
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      min-height: 64px;
+      display: grid;
+      gap: 6px;
+    }
+    .result .big { font-size: 28px; font-weight: 800; color: var(--accent); }
+    .muted { color: var(--muted); font-size: 13px; }
+
+    footer {
+      padding: 12px 16px 18px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap" role="application" aria-label="Currency Converter">
+    <header>💖 Currency Converter</header>
+    <div class="panel">
+      <div class="row">
+        <div>
+          <label for="amount">Amount</label>
+          <input id="amount" type="number" inputmode="decimal" step="any" placeholder="Enter amount" value="1" />
+        </div>
+      </div>
+
+      <div class="row two">
+        <div>
+          <label for="from">From</label>
+          <select id="from">
+            <option value="USD" selected>USD — US Dollar</option>
+            <option value="EUR">EUR — Euro</option>
+            <option value="JPY">JPY — Japanese Yen</option>
+          </select>
+        </div>
+        <div class="actions">
+          <button id="swap" class="swap" title="Swap currencies">⇅</button>
+          <div>
+            <label for="to" style="position:absolute;left:-9999px">To</label>
+            <select id="to">
+              <option value="EUR" selected>EUR — Euro</option>
+              <option value="USD">USD — US Dollar</option>
+              <option value="JPY">JPY — Japanese Yen</option>
+            </select>
+          </div>
+          <button id="convert" class="btn">Convert</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="result" aria-live="polite">
+          <div id="resultText" class="big">—</div>
+          <div id="meta" class="muted">Enter an amount and choose currencies.</div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Fixed rates: 1 USD = 0.92 EUR · 1 USD = 150.00 JPY
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      const USD_TO_EUR = 0.92;
+      const USD_TO_JPY = 150.00;
+
+      const amountEl = document.getElementById('amount');
+      const fromEl = document.getElementById('from');
+      const toEl = document.getElementById('to');
+      const swapBtn = document.getElementById('swap');
+      const convertBtn = document.getElementById('convert');
+      const resultText = document.getElementById('resultText');
+      const meta = document.getElementById('meta');
+
+      const fmt = (ccy, val) => new Intl.NumberFormat(undefined, {
+        style: 'currency', currency: ccy, maximumFractionDigits: ccy === 'JPY' ? 0 : 2
+      }).format(val);
+
+      function toUSD(value, ccy) {
+        if (ccy === 'USD') return value;
+        if (ccy === 'EUR') return value / USD_TO_EUR;
+        if (ccy === 'JPY') return value / USD_TO_JPY;
+        return NaN;
+      }
+
+      function fromUSD(valueUSD, ccy) {
+        if (ccy === 'USD') return valueUSD;
+        if (ccy === 'EUR') return valueUSD * USD_TO_EUR;
+        if (ccy === 'JPY') return valueUSD * USD_TO_JPY;
+        return NaN;
+      }
+
+      function convert() {
+        const amt = parseFloat(amountEl.value);
+        if (isNaN(amt) || amt < 0) {
+          meta.textContent = "Please enter a valid positive amount.";
+          resultText.textContent = "—";
+          return;
+        }
+
+        const from = fromEl.value;
+        const to = toEl.value;
+
+        if (from === to) {
+          resultText.textContent = fmt(to, amt);
+          meta.textContent = `No conversion needed (${from} → ${to}).`;
+          return;
+        }
+
+        const inUSD = toUSD(amt, from);
+        const result = fromUSD(inUSD, to);
+
+        resultText.textContent = fmt(to, result);
+        meta.textContent = `${fmt(from, amt)} = ${fmt(to, result)} (via USD pivot)`;
+      }
+
+      swapBtn.addEventListener('click', () => {
+        const temp = fromEl.value;
+        fromEl.value = toEl.value;
+        toEl.value = temp;
+        convert();
+      });
+
+      convertBtn.addEventListener('click', convert);
+      [amountEl, fromEl, toEl].forEach(el => el.addEventListener('input', convert));
+      amountEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); convert(); } });
+
+      convert();
+    })();
+  </script>
+</body>
+</html>
